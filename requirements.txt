@@ -1,0 +1,6 @@
+flask
+selenium
+python-dotenv
+SpeechRecognition
+pyaudio
+requests
