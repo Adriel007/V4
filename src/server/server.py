@@ -60,7 +60,7 @@ __DEEPSEEK__ = {
     "chat": "dad65929", # STACK 0-> USER, 1-> BOT, 2 -> USER, ...
     "answer": "dad65929",
     "login_input": "ds-input__input",
-    "login_button": "ds-button ds-button--primary ds-button--filled ds-button--rect ds-button--block ds-button--l ds-sign-up-form__register-button",
+    "login_button": "ds-atom-button ds-basic-button ds-basic-button--primary",
 
     "$class_name": lambda class_name: f"document.getElementsByClassName('{class_name}')",
     "$class_1": lambda class_name: f"document.getElementsByClassName('{class_name}')[0]",
@@ -74,7 +74,7 @@ def get_driver():
     if browser['driver'] is not None:
         return browser['driver']
     options = FirefoxOptions()
-    options.add_argument('--headless') # need tests
+    options.add_argument('--headless')
     geckodriver_path = shutil.which('geckodriver')
     if not geckodriver_path:
         raise RuntimeError('geckodriver not found in PATH')
