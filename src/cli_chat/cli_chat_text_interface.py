@@ -7,8 +7,10 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from src.api_llm.api_llm import ApiLLM
+from src.prompt import __PROMPTS__
 
 api_llm = ApiLLM()
+last_response = 0
 SESSION = "mysession"
 INPUT_PANE = "0.1"
 OUTPUT_PANE = "0.0"
@@ -32,8 +34,20 @@ def blink_interval():
             send_to_output(f"{ANIMATION_CLI} --left closed --right closed --mouth closed")
             time.sleep(random.uniform(0.1, 0.2))
             send_to_output(f"{ANIMATION_CLI} --left open --right open --mouth closed")
-        
         time.sleep(random.uniform(4, 8))
+
+def initiative_interval():
+    global last_response
+    while True:
+        time.sleep(random.uniform(120, 300))  # 2~5 minutes
+        if not is_talking and last_response >= time.time() - 300:  # only if no response in last 5 minutes
+            prompt = f"{__PROMPTS__['main']} {__PROMPTS__['initiative']}"
+            api_llm.send_message(prompt)
+            response = api_llm.get_latest_answer()
+            if response:
+                print(f"\nFardo: {response}")
+                said_animation(response)
+                print("You: ", end='', flush=True)
 
 def said_animation(text: str):
     global is_talking
@@ -48,6 +62,8 @@ def said_animation(text: str):
         time.sleep(0.15)
         
     is_talking = False
+    global last_response
+    last_response = time.time()
     focus_input_pane()
 
 def idle_animation():
@@ -55,7 +71,7 @@ def idle_animation():
     focus_input_pane()
 
 def send_message(message: str):
-    prompt = f"Você é o 'Fardo', um assistente virtual amigável. Responde da forma mais breve e objetiva possível. O usuário disse: {message}"
+    prompt = f"{__PROMPTS__['main']} {__PROMPTS__['user']} {message}"
     api_llm.send_message(prompt)
     response = api_llm.get_latest_answer()
     if response:
@@ -66,6 +82,7 @@ def send_message(message: str):
 
 def main():
     threading.Thread(target=blink_interval, daemon=True).start()
+    threading.Thread(target=initiative_interval, daemon=True).start()
 
     try:
         idle_animation()

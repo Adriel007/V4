@@ -1,0 +1,1 @@
+from .prompt import __PROMPTS__

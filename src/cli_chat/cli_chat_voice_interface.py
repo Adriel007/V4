@@ -10,9 +10,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from src.api_llm.api_llm import ApiLLM
 from src.STT.STT import STT
 from src.TTS.TTS import TTS
+from src.prompt import __PROMPTS__
 
 api_llm = ApiLLM()
-stt = STT(device_index=0, wake_word="Fardo", similarity_threshold=0.7)
+last_response = 0
+stt = STT(device_index=0, wake_word=None, similarity_threshold=0.7)
 tts_engine = TTS()
 
 SESSION = "mysession"
@@ -39,7 +41,16 @@ def blink_interval():
             send_to_output(f"{ANIMATION_CLI} --left closed --right closed --mouth closed")
             time.sleep(random.uniform(0.1, 0.2))
             send_to_output(f"{ANIMATION_CLI} --left open --right open --mouth closed")
+            initiative_interval()
         time.sleep(random.uniform(4, 8))
+
+def initiative_interval():
+    global last_response
+    while True:
+        time.sleep(random.uniform(120, 300))  # 2~5 minutes
+        if not is_talking and last_response >= time.time() - 300:  # only if no response in last 5 minutes
+            prompt = f"{__PROMPTS__['main']} {__PROMPTS__['initiative']}"
+            process_command(prompt)
 
 def said_animation(text: str):
     global is_talking
@@ -54,6 +65,8 @@ def said_animation(text: str):
         time.sleep(0.15)
         
     is_talking = False
+    global last_response
+    last_response = time.time()
     focus_input_pane()
 
 def idle_animation():
@@ -97,13 +110,15 @@ def on_speech_captured(selected_text, alternatives, raw_response):
     
     if not "fardo" in selected_text.lower():
         return
-    
+        
+    prompt = f"{__PROMPTS__['main']} {__PROMPTS__['user']} {selected_text}"
+    process_command(prompt)
+
+def process_command(text: str):
     global is_listening
     is_listening = False
-    
-    prompt = f"Você é o 'Fardo', um assistente virtual amigável. Responde da forma mais breve e objetiva possível. O usuário disse: {selected_text}"
-    
-    api_llm.send_message(prompt)
+
+    api_llm.send_message(text)
     response = api_llm.get_latest_answer()
     
     if response:
