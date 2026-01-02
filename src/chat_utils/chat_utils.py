@@ -1,0 +1,1 @@
+#abstrair e por codigo que se repete aqui em 2 classes diferentes CLI e WEB
