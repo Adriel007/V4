@@ -16,7 +16,8 @@ class STT:
         wake_word: str | None = None,
         search_first_n: int = 0,
         on_speech_callback=None,
-        similarity_threshold: float = 0.7
+        similarity_threshold: float = 0.7,
+        energy_threshold: int = 300
     ):
         self.device_index = device_index
         self.language = language
@@ -24,8 +25,53 @@ class STT:
         self.search_first_n = search_first_n
         self.on_speech_callback = on_speech_callback
         self.similarity_threshold = similarity_threshold
+        self.energy_threshold = energy_threshold
 
         self.recognizer = sr.Recognizer()
+        self._configure_microphone()
+
+    def _configure_microphone(self):
+        import pyaudio
+        
+        p = pyaudio.PyAudio()
+        
+        try:
+            device_info = p.get_device_info_by_index(self.device_index)
+            
+            sample_rates = [16000, 44100, 48000, 32000, 22050, 8000]
+            
+            supported_rate = None
+            for rate in sample_rates:
+                try:
+                    if p.is_format_supported(
+                        rate,
+                        input_device=self.device_index,
+                        input_channels=int(device_info['maxInputChannels']),
+                        input_format=pyaudio.paInt16
+                    ):
+                        supported_rate = rate
+                        break
+                except ValueError:
+                    continue
+            
+            if supported_rate:
+                print(f"Using sample rate: {supported_rate} Hz")
+                self.sample_rate = supported_rate
+            else:
+                self.sample_rate = int(device_info['defaultSampleRate'])
+                print(f"Using device default sample rate: {self.sample_rate} Hz")
+                
+            self.stream_kwargs = {
+                'rate': self.sample_rate,
+                'chunk_size': 1024,
+            }
+                
+        except Exception as e:
+            print(f"Warning: Could not detect optimal sample rate: {e}")
+            self.sample_rate = 16000
+            print(f"Using fallback sample rate: {self.sample_rate} Hz")
+        finally:
+            p.terminate()
 
     def _get_similarity(self, a, b):
         return SequenceMatcher(None, a, b).ratio()
@@ -87,9 +133,19 @@ class STT:
             print(f"Target wake word: '{self.wake_word}'")
         print("Press Ctrl+C to stop.\n")
 
-        with sr.Microphone(device_index=self.device_index) as source:
+        with sr.Microphone(
+            device_index=self.device_index,
+            sample_rate=self.sample_rate,
+            chunk_size=1024
+        ) as source:
             print("Calibrating ambient noise (2 seconds)...")
             self.recognizer.adjust_for_ambient_noise(source, duration=2)
+            
+            self.recognizer.energy_threshold = self.energy_threshold
+            self.recognizer.dynamic_energy_threshold = True
+            
+            print(f"Energy threshold: {self.recognizer.energy_threshold}")
+            print("Ready!\n")
 
             while True:
                 try:
@@ -107,14 +163,11 @@ class STT:
                     )
 
                     if not response:
-                        #print("Speech detected but not recognized.")
                         continue
 
                     selected, alternatives = self._select_best_transcription(response)
 
                     if selected:
-                        #print(f"Selected transcription: {selected}")
-
                         if self.on_speech_callback:
                             self.on_speech_callback(
                                 selected_text=selected,
