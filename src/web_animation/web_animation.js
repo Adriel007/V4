@@ -142,6 +142,54 @@ const mouse = new THREE.Vector2(-100, -100);
 const mouseWorldPos = new THREE.Vector3();
 let isHovering = false;
 
+// Camera controls state (WASD movement + mouse look)
+let cameraControlsEnabled = false;
+let camYaw = 0; // rotation around Y
+let camPitch = 0; // rotation around X
+const camSpeed = 4.0; // units per second
+const camSensitivity = 0.0025; // mouse sensitivity
+const camKeys = { w: false, a: false, s: false, d: false };
+let _camLastMouse = { x: 0, y: 0, initialized: false };
+
+function enableCameraControls() {
+  if (cameraControlsEnabled) return;
+  cameraControlsEnabled = true;
+
+  // Initialize yaw/pitch from current camera direction
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  camYaw = Math.atan2(dir.x, -dir.z);
+  camPitch = Math.asin(THREE.MathUtils.clamp(dir.y, -0.999, 0.999));
+
+  window.addEventListener("mousemove", (e) => {
+    // Use relative movement based on last mouse position
+    if (!_camLastMouse.initialized) {
+      _camLastMouse.x = e.clientX;
+      _camLastMouse.y = e.clientY;
+      _camLastMouse.initialized = true;
+      return;
+    }
+    const dx = e.clientX - _camLastMouse.x;
+    const dy = e.clientY - _camLastMouse.y;
+    _camLastMouse.x = e.clientX;
+    _camLastMouse.y = e.clientY;
+
+    camYaw -= dx * camSensitivity;
+    camPitch -= dy * camSensitivity;
+    const limit = Math.PI / 2 - 0.05;
+    camPitch = Math.max(-limit, Math.min(limit, camPitch));
+  });
+
+  window.addEventListener("keydown", (e) => {
+    const k = e.key.toLowerCase();
+    if (k in camKeys) camKeys[k] = true;
+  });
+  window.addEventListener("keyup", (e) => {
+    const k = e.key.toLowerCase();
+    if (k in camKeys) camKeys[k] = false;
+  });
+}
+
 let blinkTimer = 0;
 let nextBlinkTime = Math.random() * 3 + 2;
 let isBlinking = false;
@@ -196,7 +244,7 @@ function triggerBlink() {
   blinkTimer = 0;
 }
 
-container.addEventListener("click", onMouseClick);
+window.addEventListener("click", onMouseClick);
 
 // Wander timer
 let wanderTimer = 0;
@@ -364,6 +412,33 @@ function animate() {
     spinVelocity *= 0.92;
   }
 
+  // --- Camera controls update (WASD movement + mouse look) ---
+  if (cameraControlsEnabled) {
+    const moveVec = new THREE.Vector3();
+
+    // Forward/back (W/S)
+    const forward = new THREE.Vector3(Math.sin(camYaw), 0, -Math.cos(camYaw));
+    if (camKeys.w) moveVec.add(forward);
+    if (camKeys.s) moveVec.sub(forward);
+
+    // Right/left (D/A)
+    const right = new THREE.Vector3(Math.cos(camYaw), 0, Math.sin(camYaw));
+    if (camKeys.d) moveVec.add(right);
+    if (camKeys.a) moveVec.sub(right);
+
+    if (moveVec.lengthSq() > 0.000001) {
+      moveVec.normalize().multiplyScalar(camSpeed * delta);
+      camera.position.add(moveVec);
+    }
+
+    // Update camera look direction from yaw/pitch
+    const lx = Math.sin(camYaw) * Math.cos(camPitch);
+    const ly = Math.sin(camPitch);
+    const lz = -Math.cos(camYaw) * Math.cos(camPitch);
+    const lookDir = new THREE.Vector3(lx, ly, lz);
+    camera.lookAt(camera.position.clone().add(lookDir));
+  }
+
   // Apply combined scales with smoothing
   creatureGroup.scale.x = THREE.MathUtils.lerp(
     creatureGroup.scale.x,
@@ -399,3 +474,5 @@ window.addEventListener("resize", () => {
 });
 
 animate();
+// Enable camera controls (WASD + mouse). Comment this line to disable.
+//enableCameraControls();
