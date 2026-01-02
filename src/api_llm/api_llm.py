@@ -29,6 +29,21 @@ class ApiLLM:
     def send_message(self, message):
         resp = requests.post(f'{self.base_url}/deepseek/send_message', json={'message': message})
         return resp.json()
+    
+    def search_mode(self):
+        try:
+            resp = requests.patch(f'{self.base_url}/deepseek/chat_options/search')
+            data = resp.json()
+            enabled = data.get('enabled')
+
+            if enabled is False:
+                resp2 = requests.patch(f'{self.base_url}/deepseek/chat_options/search')
+                return resp2.json()
+
+            return data
+        except Exception as e:
+            print(f"[ERROR] search_mode failed: {e}")
+            return {'success': False, 'error': str(e)}
 
     def send_message_stream(self, message):
         try:            
