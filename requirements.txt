@@ -4,3 +4,4 @@ python-dotenv
 SpeechRecognition
 pyaudio
 requests
+geocoder
