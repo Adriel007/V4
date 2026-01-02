@@ -16,9 +16,11 @@ time.sleep(1)
 api_llm.delete_all_chats()
 time.sleep(1)
 api_llm.new_chat()
+#time.sleep(1)
+#api_llm.search_mode()
 
 print("\033c", end="")
-MODE = input("Choose mode (voice/text): ").strip().lower()
+MODE = input("Choose mode (voice/voice_better/text): ").strip().lower()
 
 def cleanup(*_):
     subprocess.run(
