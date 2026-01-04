@@ -58,6 +58,7 @@ __DEEPSEEK__ = {
     "send": "_7436101 ds-icon-button ds-icon-button--l ds-icon-button--sizing-container",
     "input": "_27c9245 ds-scroll-area d96f2d2a",
     "chat": "dad65929", # STACK 0-> USER, 1-> BOT, 2 -> USER, ...
+    "search_trash": ["d162f7b9", "_669a677"],
     "answer": "dad65929",
     "login_input": "ds-input__input",
     "login_button": "ds-atom-button ds-basic-button ds-basic-button--primary",
@@ -415,7 +416,14 @@ def deepseek_get_latest_answer():
         try:
             script = f"""
             var parent = {__DEEPSEEK__["$class_1"](__DEEPSEEK__["answer"])};
+            var trash = [{__DEEPSEEK__["$class_name"](__DEEPSEEK__["search_trash"][0])},
+                {__DEEPSEEK__["$class_name"](__DEEPSEEK__["search_trash"][1])}];
             if (!parent) return [];
+            while (trash[0].length > 0)
+                trash[0][0].remove();
+            while (trash[1].length > 0)
+                trash[1][0].remove();
+            parent.querySelectorAll('a').forEach(a => a.textContent = "");
             var children = Array.from(parent.children);
             return children.map(e => e.innerText);
             """
@@ -439,7 +447,14 @@ def deepseek_get_all_answers():
         try:
             script = f"""
             var parent = {__DEEPSEEK__["$class_1"](__DEEPSEEK__["answer"])};
+            var trash = [{__DEEPSEEK__["$class_name"](__DEEPSEEK__["search_trash"][0])},
+                {__DEEPSEEK__["$class_name"](__DEEPSEEK__["search_trash"][1])}];
             if (!parent) return [];
+            while (trash[0].length > 0)
+                trash[0][0].remove();
+            while (trash[1].length > 0)
+                trash[1][0].remove();
+            parent.querySelectorAll('a').forEach(a => a.textContent = "");
             var children = Array.from(parent.children);
             return children.map(e => e.innerText);
             """
