@@ -6,6 +6,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from src.api_llm.api_llm import ApiLLM
+from src.prompt import __PROMPTS__
 
 SESSION = "mysession"
 
@@ -16,8 +17,10 @@ time.sleep(1)
 api_llm.delete_all_chats()
 time.sleep(1)
 api_llm.new_chat()
-#time.sleep(1)
-#api_llm.search_mode()
+time.sleep(1)
+api_llm.search_mode()
+api_llm.send_message(__PROMPTS__["main"])
+api_llm.get_latest_answer()
 
 print("\033c", end="")
 MODE = input("Choose mode (voice/voice_better/text): ").strip().lower()
@@ -57,10 +60,10 @@ subprocess.run(
         "split-window",
         "-v",
         "-p",
-        "30",
+        "50",
         "-t",
         SESSION,
-        f"python3 ./src/cli_chat/cli_chat_{MODE}_interface.py",
+        f"python3 ./src/cli_chat/cli_chat_interface.py --mode {MODE}", #"2>> ./tmp/fardo_errors.log" <- to log tmux erros
     ],
     check=True,
 )
