@@ -1,5 +1,6 @@
 import speech_recognition as sr
 import sys
+import pyaudio
 from difflib import SequenceMatcher
 
 EXCLUDE_KEYWORDS = [
@@ -30,9 +31,7 @@ class STT:
         self.recognizer = sr.Recognizer()
         self._configure_microphone()
 
-    def _configure_microphone(self):
-        import pyaudio
-        
+    def _configure_microphone(self):        
         p = pyaudio.PyAudio()
         
         try:
